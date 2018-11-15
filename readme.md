@@ -1,6 +1,6 @@
 # description
    crypto alg and signature alg cost much computering resources. To improve performance , we wish some costs in special hardware such
-   as FGPA. 
+   as FPGA. 
 
    
 # features
