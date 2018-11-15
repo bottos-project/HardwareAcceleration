@@ -44,7 +44,7 @@ Secp256k1为基于Fp有限域上的Koblitz椭圆曲线，由于其特殊构造�
 > G=(0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798, 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8)
 >
 > n = 0xFFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-
+>
 > h = 01
 
 ### 签名运算：
@@ -57,17 +57,17 @@ Secp256k1为基于Fp有限域上的Koblitz椭圆曲线，由于其特殊构造�
 1. 产生一个随机整数r（r<n），计算点R=rG
 2. 原数据m和点R的坐标值x,y作为参数，计算SHA1做为hash，即Hash=SHA1(原数据,x,y)；
 3. 计算签名值s ≡ r - Hash * k (mod n)
-#### 得到签名值
+#### (3)得到签名值
 1. r和s为需要的签名值；
 2. 如果r和s其中一个为0，重新产生r和s；
 
-### 关键点：
+#### 关键点：
 1. 计算椭圆上的点R，需要使用椭圆上的计算方法，是否可参考公钥的生成？是否上位机可使用公钥的产生方式直接得到点R的x与y的值？
 2. Hash运算，待了解；
 3. Hash*k这个是256bit乘法运算，而不是椭圆上的点运算？
 4. r-Hash*k (mod n)这个数为一个负数的求模运算？ 
 
-#### 注意点：
+##### 注意点：
 1. G点取标准的256bit还是512bit？ 
 2. Hash与k同为256bit，那么Hash*k为512bit，签名值s取512bit？
 3. 签名值r为256bit，s为512bit？
