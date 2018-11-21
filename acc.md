@@ -28,6 +28,7 @@ type PublicKey struct {
 
 # 签名算法-函数解读 #
 r, s, err := Sign(rand.Reader, priv, hash[:])
+
 **输入**
 1)  输入随机值（<256b）: 私钥的安全性，取决与该随机数的产生，长度小于32byte（256bit）
 2)  私钥:  为在[1，secp256k1n - 1]范围内随机选择的正整数，长度小于256bit
