@@ -66,8 +66,14 @@ r, s, err := Sign(rand.Reader, priv, hash[:])
           =  e/k + D*G mod n 
         其中e 为散列值，k为随机数  ----> e/k 为随机值
         D为私钥，G为基点---->
+                s.Add(s, e)
+		s.Mul(s, kInv)
+		s.Mod(s, N) 
 
 签名值为：{r ，s} 
+
+
+必不可少的匀速： 256bit加法、 256bit乘法、256bit模运算
 
 问题： go库函数中的ecdsa算法的公式与ecdsa的理论计算不符合，怎么理解？
 
