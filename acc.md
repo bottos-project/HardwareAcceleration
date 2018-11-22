@@ -1,5 +1,6 @@
 # 关于公钥与私钥
  参考go语言库 D:\Go\src\crypto\ecdsa
+ goland 的 ECDSA库的椭圆运算，使用了另一个椭圆运算库（不易参考）：https://www.hyperelliptic.org/EFD/g1p/auto-shortw.html
 
 PrivateKey 代表 ECDSA 私钥。
 
@@ -31,54 +32,119 @@ type PublicKey struct {
 r, s, err := Sign(rand.Reader, priv, hash[:])
 
 **输入**
-1)  输入随机值（<256b）: 私钥的安全性，取决与该随机数的产生，长度小于32byte（256bit）
-2)  私钥:  为在[1，secp256k1n - 1]范围内随机选择的正整数，长度小于256bit
-3)  散列值： 为任意长度信息的散列值，也称信息摘要，为SHA-512 hash计算结果，长度256bit
+1)  输入随机值r(r<n) : 私钥的安全性，取决与该随机数的产生，长度小于32byte（256bit）
+2)  私钥D:  为在[1，secp256k1n - 1]范围内随机选择的正整数，长度小于256bit
+3)  散列值e： 为任意长度信息的散列值，也称信息摘要，为SHA-512 hash计算结果，长度256bit
 
 **计算过程**
-```
-产生一个随机整数r（r<n），计算点R=rG；
-将原数据和点R的坐标值x,y作为参数，计算SHA1做为hash，即Hash=SHA1(原数据,x,y)；
-计算s≡r - Hash * k (mod n)
-```
-
 1. 散列值转换为整数得到e  ： e := hashToInt(hash, c)
-2. 计算r值： 
-               
-        产生一个随机数k：          k, err = randFieldElement(c, csprng)
-
-        求k在有限域GF(P)的逆，即1/k, (kInv)：
-
-        if in, ok := priv.Curve.(invertible); ok {
-         kInv = in.Inverse(k)
-         } else {
-         kInv = fermatInverse(k, N) // N != 0
-        }
-
-        求r = k*G  , 需要求N的模
-         r, _ = priv.Curve.ScalarBaseMult(k.Bytes())
-         r.Mod(r, N)
-        
-3. 计算s值
-
-        s = （e + DkG）* 1/k  mod  n
-          =  (e + Dr) * kInv  mod  n
-          =  e/k + D*G mod n 
+2. 计算签名值r值：  
+        产生一个随机数k：           k, err = randFieldElement(c, csprng)
+        计算椭圆上的点R = k*G  :    r, _ = priv.Curve.ScalarBaseMult(k.Bytes())
+        签名值r 为点R（x，y）的x值     
+3. 计算签名值s值：
+        s = （e + DkG）* 1/k 
         其中e 为散列值，k为随机数  ----> e/k 为随机值
         D为私钥，G为基点---->
-                s.Add(s, e)
-		s.Mul(s, kInv)
-		s.Mod(s, N) 
+
 
 签名值为：{r ，s} 
 
 
 必不可少的匀速： 256bit加法、 256bit乘法、256bit模运算
 
-问题： go库函数中的ecdsa算法的公式与ecdsa的理论计算不符合，怎么理解？
-
-
 http://blog.51cto.com/11821908/2057726
 
+
+# 算法梳理
+### 签名运算：
+#### （1）已知
+1. 椭圆曲线T=(p,a,b,G,n,h)的各参数(secp256k1)
+2. 私钥k；
+3. 公钥K = k*G；
+4. 原数据或散列值m
+#### （2）运算过程	
+1. 计算签名值Sig.R ： （需小于n，所以需要与n求模，椭圆曲线中求模运算不影响加密特性）
+>         产生一个随机整数r（r<n），计算点R=rG  ;
+>         提取R的坐标值（x,y）中的x值为为签名值Sig.R； 
+
+2. 计算签名值Sig.S
+>       计算乘法 (Sig.R) * k;         
+>       计算加法 (Sig.R) * k + m  ;     
+>       计算随机数在椭圆上的的逆 1/r  ;   
+>       计算乘法Sig.S = ((Sig.R) * k + m ) * (1/r);
+
+3. 关于求模运算，可以计算的每一步求模，也可以最终结果求模，不影响最终计算结果。求模的目的是限定最终的数据范围为1~n-1之间的数
+
+4. 椭圆运算：仅Sig.R的运算为椭圆运算，但椭圆运算中涉及了多个加减乘除运算，应该是一个难点。
+
+5. 注意：求逆运算与求模运算的规则，相对传统的逆运算与求模运算有一定的扩展，需要特别注意。
+
+
+### 函数：
+主要参考：https://github.com/haltingstate/secp256k1-go
+该库使用了高精度计算库 GMP ：https://gmplib.org/
+但该函数库与go语言自身的ECDSA库，计算方法相同。
+
+// func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int)
+//输入：
+//	seckey   私钥 256bit  ，   公式中为k
+//	nonce   随机数256bit  ，   公式中为r
+//	message  任意长度信息 ，   公式中为Hash
+//输出:   
+//  recid：64*8=512bit签名信息
+//计算过程：
+//	设随机数为r，私钥为k
+//	计算R的值(x,y)，R = r * G ，其中r为随机数，程序中为nonce，G为椭圆基点
+//  签名值R：取点R(x,y)的x轴数值  , 依然为椭圆曲线上的一个随机数；
+//  签名值S: S  = (k*R + Hash) * 1/r
+//	       =  (k*r*G + hash） * 1/r
+
+func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
+	var r XY
+	var rp XYZ
+	var n Number
+	var b [32]byte
+
+	ECmultGen(&rp, nonce)  //通过随机数r：nonce，  计算点R=rG （rp = nonce * G）
+	r.SetXYZ(&rp) //获取rp的（x，y）
+	r.X.Normalize()
+	r.Y.Normalize()
+	r.X.GetB32(b[:]) //  把r.x转换为字节矩阵 传递给b
+	sig.R.SetBytes(b[:]) // 将b转换为一个整形得到  R = R.x
+	if recid != nil {
+		*recid = 0
+		if sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
+			*recid |= 2
+		}
+		if r.Y.IsOdd() {
+			*recid |= 1
+		}
+	}
+	sig.R.mod(&TheCurve.Order)  // R = R mode n
+	n.mod_mul(&sig.R, seckey, &TheCurve.Order) //n = R * seckey  mode n
+	n.Add(&n.Int, &message.Int)                //n = R * seckey  mode n  + message
+	n.mod(&TheCurve.Order)                     //n =(R * seckey + message  ) mode n  
+	sig.S.mod_inv(nonce, &TheCurve.Order)      //S = 1/nonce   *  (R * seckey + message)
+	sig.S.mod_mul(&sig.S, &n, &TheCurve.Order)
+	if sig.S.Sign() == 0 {
+		return 0
+	}
+	if sig.S.IsOdd() {
+		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
+		if recid != nil {
+			*recid ^= 1
+		}
+	}
+
+	if FORCE_LOW_S && sig.S.Cmp(&TheCurve.half_order.Int) == 1 {
+		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
+		if recid != nil {
+			*recid ^= 1
+		}
+	}
+
+	return 1
+}
 
 
