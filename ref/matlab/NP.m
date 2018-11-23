@@ -1,5 +1,6 @@
 %file:NP.m  常数 乘以 椭圆上的点
 %a,b 椭圆参数，p 质数，n表示 n个点P相加也就是n*P ,x,y 表示P点的横纵坐标
+% （这里为了简单，使用了递归累加的计算方法）
 function [resx,resy] = NP( a,b,p,n,x,y )
 
 if n ==1
