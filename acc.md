@@ -112,39 +112,50 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	r.Y.Normalize()
 	r.X.GetB32(b[:]) //  把r.x转换为字节矩阵 传递给b
 	sig.R.SetBytes(b[:]) // 将b转换为一个整形得到  R = R.x
-	if recid != nil {
-		*recid = 0
-		if sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
-			*recid |= 2
-		}
-		if r.Y.IsOdd() {
-			*recid |= 1
-		}
-	}
+
 	sig.R.mod(&TheCurve.Order)  // R = R mode n
 	n.mod_mul(&sig.R, seckey, &TheCurve.Order) //n = R * seckey  mode n
 	n.Add(&n.Int, &message.Int)                //n = R * seckey  mode n  + message
 	n.mod(&TheCurve.Order)                     //n =(R * seckey + message  ) mode n  
 	sig.S.mod_inv(nonce, &TheCurve.Order)      //S = 1/nonce   *  (R * seckey + message)
 	sig.S.mod_mul(&sig.S, &n, &TheCurve.Order)
-	if sig.S.Sign() == 0 {
-		return 0
-	}
-	if sig.S.IsOdd() {
-		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
-		if recid != nil {
-			*recid ^= 1
-		}
-	}
-
-	if FORCE_LOW_S && sig.S.Cmp(&TheCurve.half_order.Int) == 1 {
-		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
-		if recid != nil {
-			*recid ^= 1
-		}
-	}
 
 	return 1
 }
 
 
+# 具体运算
+## 求模运算
+椭圆曲线签名算法，主要求模对象为椭圆的阶n
+ n = 0xFFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
+ n的补码为n取反加1有：
+-n = 0x00000000 00000000 00000000 00000001 45512319 50B75FC4 402DA173 2FC9BEBF
+
+签名运算中，存在的求模运算为，和与积的求模。
+
+求模运算中n与p的关系：
+p: 我们给出一个有限域Fp，Fp中有p（p为质数）个元素0,1,2,…, p-2,p-1；
+n：如果椭圆曲线上一点G，存在最小的正整数n使得数乘nG=O∞ ,则将n称为P的阶，因此与G点相关点最多只有n个。
+
+**加法求模：**
+- 因被加数都小于n，所以求和后与n相除的整数部分为0~2，因此两步计算即可
+	
+		C = A + B mod P
+      {
+	    S = A + B；
+		T = S - P；
+		C = (T<0) ?  S : T;	 
+	  }
+ 	
+
+ **乘法求模：**
+ 先做乘法256bit的两个数相乘，乘积后为512bit，做除法取余数。
+ 使用移位除法的方式，需要256个时钟运算周期，可以接受。
+ 
+ **分数求模：**
+ 
+ 
+
+
+maltab-ECC加密解密算法：https://blog.csdn.net/alphags/article/details/79660819
+快速约减，求模运算：https://my.oschina.net/safedead/blog/1541809
