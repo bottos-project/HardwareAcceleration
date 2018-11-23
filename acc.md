@@ -154,7 +154,7 @@ n：如果椭圆曲线上一点G，存在最小的正整数n使得数乘nG=O∞ 
  
  **分数求模：**
  
- 
+ 运算难点
 
 
 maltab-ECC加密解密算法：https://blog.csdn.net/alphags/article/details/79660819

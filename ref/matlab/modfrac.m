@@ -12,6 +12,6 @@ i=1;
 while mod(d*i,m) ~=1
     i=i+1;
 end
-
+i
 y=mod(n*i,m);
 end
