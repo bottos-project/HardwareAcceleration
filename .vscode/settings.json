@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "pci.h": "c",
+        "module.h": "c"
+    }
+}
