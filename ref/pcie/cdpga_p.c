@@ -5,6 +5,9 @@
  * All rights reserved.
  *
  * Author: Duke Fong <duke@dukelec.com>
+
+
+
  */
 
 #define DEBUG
@@ -13,6 +16,7 @@
 #include <linux/cdev.h>
 #include <linux/module.h>
 #include <linux/pci.h>
+//#include <unistd.h> //
 
 #define DRV_NAME "cdpga_p"
 #define BAR_NUM 1
@@ -70,7 +74,7 @@ static int cdp_probe(struct pci_dev *dev, const struct pci_device_id *id)
         goto err_regions;
     }
 
-    //将获得内存地址转换成虚拟地址
+    //获得io映射地址  将获得内存地址转换成虚拟地址 
     cdp->bar_va[bar] = pci_iomap(dev, bar, 0);
     if (!cdp->bar_va[bar]) {
         dev_err(&dev->dev, "pci_iomap err!\n");
@@ -81,13 +85,26 @@ static int cdp_probe(struct pci_dev *dev, const struct pci_device_id *id)
     dev_dbg(&dev->dev, "cdp_probe successful\n");
 
     {
-        uint32_t *reg_dir = cdp->bar_va[bar] + 4;
+	uint32_t *reg_data = cdp->bar_va[bar]；
+        uint32_t *reg_dir = cdp->bar_va[bar] + 4;//表示加4个字节的偏移32bit
 
         dev_dbg(&dev->dev, "%p: %08x\n", reg_dir, *reg_dir);
 
-        *reg_dir = 0xffff;
+        *reg_dir = 0xffff;//设置方向为输出，默认值为0
 
         dev_dbg(&dev->dev, "%p: %08x\n", reg_dir, *reg_dir);
+
+	while(1)
+	{
+	*reg_data  = 0x7fff; //最高2bit设置为01
+	//sleep(3); //延时3s
+	*reg_data  = 0x8fff ;//最高2bit设置为10
+	//sleep(3);
+	*reg_data  = 0x0fff; //最高2bit设置为00
+	//sleep(3);
+	*reg_data  = 0xffff ;//最高2bit设置为11
+	}
+
     }
 
     return 0;
