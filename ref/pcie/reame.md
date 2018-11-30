@@ -1,6 +1,6 @@
 # ubuntu 下  pcie库的操作
 
-https://blog.csdn.net/hpu11/article/details/81876366
+https://blog.csdn.net/hpu11/article/details/81876366 
 
 ##　1. 2个关键数据结构
 PCI设备上有三种地址空间：**PCI的I/O空间、PCI的存储空间和PCI的配置空间**。 CPU可以访问PCI设备上的所有地址空间，其中I/O空间和存储空间提供给设备驱动程序使用，而配置空间则由Linux内核中的PCI初始化代码使用。内核在启动时负责对所有PCI设备进行初始化，配置好所有的PCI设备，包括中断号以及I/O基址，并在文件/proc/pci中列出所有找到的PCI设备，以及这些设备的参数和属性。  

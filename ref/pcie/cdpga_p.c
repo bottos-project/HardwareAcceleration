@@ -103,6 +103,7 @@ static int cdp_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	*reg_data  = 0x0fff; //最高2bit设置为00
 	//sleep(3);
 	*reg_data  = 0xffff ;//最高2bit设置为11
+    
 	}
 
     }
