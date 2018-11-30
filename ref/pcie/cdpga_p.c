@@ -84,7 +84,7 @@ static int cdp_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
     dev_dbg(&dev->dev, "cdp_probe successful\n");
 
-    {
+    {   //PIO口的访问地址见altera 的PIO口核说明
 	uint32_t *reg_data = cdp->bar_va[bar]； //IO口首地址，对应数据读写
         uint32_t *reg_dir = cdp->bar_va[bar] + 4;//表示加4个字节的偏移32bit，IO口第二个地址，对应IO口方向
 
